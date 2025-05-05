@@ -1,0 +1,288 @@
+---
+title: "Math 474 Project"
+output: html_document
+date: "2025-04-21"
+---
+Link to dataset: https://www.kaggle.com/datasets/rabieelkharoua/students-performance-dataset
+
+Needed libraries
+```{r}
+library(MASS) # for LDA and QDA
+library(ggplot2) # for creating plots
+library(e1071) # for naive bayes
+library(class) # for KNN
+library(nnet) # for multinomial logistic regression since glm() needs binary
+```
+
+Reading the file in + preview of data
+```{r}
+sp_data <- read.csv("Student_performance_data.csv")
+head(sp_data)
+```
+
+Checking for n/a values in the data and removing them if applicable
+```{r}
+if (sum(is.na(sp_data)) == 0) {
+  print("The data is complete and there are no NA values to remove/omit.")
+} else {
+  num_na <- sum(is.na(sp_data))
+  sp_data_clean <- sp_data |> na.omit(sp_data)
+  cat(num_na, "NAs have been removed and data has been cleaned.")
+}
+```
+
+Understanding the dataset
+  - Gender
+  - Ethnicity
+  - ParentalEducation
+  - Tutoring
+  - Extracurricular
+  - Sports
+  - Music
+  - Volunteering
+  - ParentalSupport       
+  - GradeClass
+```{r}
+dim(sp_data)
+names(sp_data)
+head(sp_data)
+```
+
+Making sure categorical features are correctly interpreted as factors and dropping student ID since it won't be needed
+```{r}
+# dropping student ID
+sp_data_new <- subset(sp_data, select = -c(StudentID))
+
+# numeric dataset for knn
+sp_data_numeric <- subset(sp_data, select = -c(StudentID))
+
+# setting specific columns as factor and re-labeling features so that they are easier to read and understand
+new_levels <- list(
+  Gender = c("Male", "Female"),
+  Ethnicity = c("Caucasian", "African American", "Asian", "Other"),
+  ParentalEducation = c("None", "High School", "Some College", "Bachelor's", "Higher"),
+  Tutoring = c("No", "Yes"),
+  ParentalSupport = c("None", "Low", "Moderate", "High", "Very High"),
+  Extracurricular = c("No", "Yes"),
+  Sports = c("No", "Yes"),
+  Music = c("No", "Yes"),
+  Volunteering = c("No", "Yes"),
+  GradeClass = c("A", "B", "C", "D", "F")
+)
+
+for (feature in names(new_levels)) {
+  sp_data_new[[feature]] <- factor(sp_data_new[[feature]], labels = new_levels[[feature]])
+}
+
+# preview of new data
+head(sp_data_new)
+```
+
+Generating plots
+```{r}
+# histogram of distribution of students' age
+ggplot(sp_data_new, aes(x = Age)) +
+  geom_histogram(, color = "red", fill = "grey", binwidth = 0.5) +
+  labs(title = "Distribution of Student Ages", x = "Age", y = "Count") +
+  theme_minimal()
+
+# histogram of distribution of GradeClass
+ggplot(sp_data_new, aes(x = GradeClass)) + 
+  geom_bar(color = "green", fill = "grey") +
+  labs(title = "Distribution of Student Grade Classes", x = "Letter Grade", y = "Count") +
+  theme_minimal()
+  
+# boxplot comparing GradeClass to StudyTime
+ggplot(sp_data_new, aes(x = GradeClass, y = StudyTimeWeekly)) +
+  geom_boxplot(color = "blue", fill = "grey") +
+  labs(title = "Weekly Study Time by Grade Class", x = "Letter Grade", y = "Study Time (hours/week)") +
+  theme_minimal()
+
+# boxplot of Absences and GradeClass
+ggplot(sp_data_new, aes(x = GradeClass, y = Absences)) +
+  geom_boxplot(color = "magenta", fill = "grey") +
+  labs(title = "Amount of absences by Grade Class", x = "Letter Grade", y = "Number of absences") +
+  theme_minimal()
+
+# bar chart of Parental Support and GradeClass
+ggplot(sp_data_new, aes(x = ParentalSupport, fill = GradeClass)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Distribution of Grade Classes by Parental Support", 
+       x = "Parental Support", 
+       y = "Count of Students") +
+  theme_minimal()
+```
+
+Splitting the data into training and test sets
+```{r}
+set.seed(1)
+
+# training index
+training_index <- sample(1:nrow(sp_data_new), 0.7 * nrow(sp_data_new))
+
+# Training
+student_train <- sp_data_new[training_index, ]
+student_train_knn <- sp_data_numeric[training_index, ]
+
+# Testing
+student_test <- sp_data_new[-training_index, ]
+student_test_knn <- sp_data_numeric[-training_index, ]
+
+# checking dimensions
+dim(student_train)
+dim(student_test)
+```
+
+Logistic Regression
+```{r}
+# fitting model
+student_logit <- multinom(GradeClass ~ ., data = student_train)
+
+# making prediction on test data
+student_logit_pred <- predict(student_logit, newdata = student_test)
+
+# confusion matrix
+student_logit_cm <- table(predicted = student_logit_pred, actual = student_test$GradeClass)
+print(student_logit_cm)
+
+# accuracy and error for logistic model
+student_logit_acc <- mean(student_logit_pred == student_test$GradeClass)
+cat("Accuracy score: ", student_logit_acc, "\n")
+student_logit_err <- mean(student_logit_pred != student_test$GradeClass)
+cat("Error score: ", student_logit_err, "\n")
+```
+
+LDA
+```{r}
+set.seed(1)
+
+# fitting model
+student_lda <- lda(GradeClass ~ ., data = student_train)
+
+# predicting on the test data
+student_lda_pred <- predict(student_lda, newdata = student_test)
+
+# confusion matrix
+student_lda_cm <- table(predicted = student_lda_pred$class, actual = student_test$GradeClass)
+print(student_lda_cm)
+
+# accuracy and error for LDA
+student_lda_acc <- mean(student_lda_pred$class == student_test$GradeClass)
+cat("Accuracy score: ", student_lda_acc, "\n")
+student_lda_err <- mean(student_lda_pred$class != student_test$GradeClass)
+cat("Error score: ", student_lda_err)
+```
+
+QDA
+```{r}
+set.seed(1)
+
+# fitting model
+student_qda <- qda(GradeClass ~ ., data = student_train)
+
+# predicting on the test data
+student_qda_pred <- predict(student_qda, newdata = student_test)
+
+# confusion matrix
+student_qda_cm <- table(predicted = student_qda_pred$class, actual = student_test$GradeClass)
+print(student_qda_cm)
+
+# accuracy and error for QDA
+student_qda_acc <- mean(student_qda_pred$class == student_test$GradeClass)
+cat("Accuracy score: ", student_qda_acc, "\n")
+student_qda_err <- mean(student_qda_pred$class != student_test$GradeClass)
+cat("Error score: ", student_qda_err)
+```
+
+Naive-Bayes
+```{r}
+set.seed(1)
+
+# fitting model
+student_nb <- naiveBayes(GradeClass ~ ., data = student_train)
+
+# predicting on the test data
+student_nb_pred <- predict(student_nb, newdata = student_test)
+
+# confusion matrix
+student_nb_cm <- table(predicted = student_nb_pred, actual = student_test$GradeClass)
+print(student_nb_cm)
+
+# accuracy and error for Naive Bayes model
+student_nb_acc <- mean(student_nb_pred == student_test$GradeClass)
+cat("Accuracy score: ", student_nb_acc, "\n")
+student_nb_err <- mean(student_nb_pred != student_test$GradeClass)
+cat("Error score: ", student_nb_err)
+```
+
+KNN data preparation
+```{r}
+set.seed(1)
+
+# preparing the data for KNN evaluation
+student_knn_trainX <- subset(student_train_knn, select = -GradeClass)
+student_knn_testX <- subset(student_test_knn, select = -GradeClass)
+
+student_knn_trainY <- student_train_knn$GradeClass
+student_knn_testY <- student_test_knn$GradeClass
+```
+
+KNN for k = 1
+```{r}
+set.seed(1)
+
+# running KNN for k = 1
+student_knn1_pred <- knn(train = student_knn_trainX,
+                   test = student_knn_testX,
+                   cl = student_knn_trainY,
+                   k = 1)
+
+# confusion matrix for k = 1
+student_knn1_cm <- table(predicted = student_knn1_pred, actual = student_knn_testY)
+print(student_knn1_cm)
+
+# accuracy and error for k = 1
+student_knn1_acc <- mean(student_knn1_pred == student_knn_testY)
+cat("Accuracy score: ", student_knn1_acc, "\n")
+student_knn1_err <- mean(student_knn1_pred != student_knn_testY)
+cat("Error score: ", student_knn1_err)
+```
+
+KNN for k = 5
+```{r}
+set.seed(1)
+
+# running KNN for k = 5
+student_knn5_pred <- knn(train = student_knn_trainX,
+                   test = student_knn_testX,
+                   cl = student_knn_trainY,
+                   k = 5)
+
+# confusion matrix for k = 5
+student_knn5_cm <- table(predicted = student_knn5_pred, actual = student_knn_testY)
+print(student_knn5_cm)
+
+# accuracy and erro for k = 5
+student_knn5_acc <- mean(student_knn5_pred == student_knn_testY)
+cat("Accuracy score: ", student_knn5_acc, "\n")
+student_knn5_err <- mean(student_knn5_pred != student_knn_testY)
+cat("Error score: ", student_knn5_err)
+```
+
+Results and comparison between models
+```{r}
+acc_summary <- data.frame(Model = c("Logistic Regression", 
+                                    "LDA",
+                                    "QDA",
+                                    "Naive Bayes",
+                                    "KNN k=1",
+                                    "KNN k=5"), 
+                          Accuracy = c(student_logit_acc,
+                                       student_lda_acc, 
+                                       student_qda_acc, 
+                                       student_nb_acc, 
+                                       student_knn1_acc, 
+                                       student_knn5_acc))
+print(acc_summary)
+```
+

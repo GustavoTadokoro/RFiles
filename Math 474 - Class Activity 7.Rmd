@@ -1,0 +1,107 @@
+---
+title: "Class Activity 7"
+output: html_document
+date: "2025-04-22"
+---
+In this exercise, you will use Boston data set to perform best subset selection, where per capita crime rate is the response variable and all other remaining variables as predictors. Note: The Boston data set is in the MASS library
+```{r}
+library(MASS)
+library(ISLR2)
+library(leaps)
+attach(Boston)
+```
+
+(a)	Apply regsubsets() to the data set in order to perform best subset selection. What is the best model obtained according to Cp, BIC, and adjusted R^2? Show some plots to provide evidence for your answer, and report the coefficients of the best model obtained.
+  - Adjusted R^2 -> 9 predictors
+  - Cp -> 7 predictors
+  - BIC -> 2 predictors
+```{r}
+dim(Boston)
+
+regfit_full <- regsubsets(crim ~ ., data = Boston, nvmax = 12)
+reg_summary <- summary(regfit_full)
+reg_summary
+
+par(mfrow=c(2,2))
+
+plot(reg_summary$rss,xlab="Number of Variables",ylab="RSS")
+
+which.max(reg_summary$adjr2)
+plot(reg_summary$adjr2,xlab="Number of Variables",ylab="Adjusted RSq")
+points(9,reg_summary$adjr2[9], col="red",cex=2,pch=20)
+coef(regfit_full, 9)
+
+which.min(reg_summary$cp)
+plot(reg_summary$cp,xlab="Number of Variables",ylab="Cp")
+points(7,reg_summary$cp[7],col="red",cex=2,pch=20)
+coef(regfit_full, 7)
+
+which.min(reg_summary$bic)
+plot(reg_summary$bic,xlab="Number of Variables",ylab="BIC")
+points(2,reg_summary$bic[2],col="red",cex=2,pch=20)
+coef(regfit_full, 2)
+```
+
+(b)	Repeat (a), using forward stepwise selection and also using backwards stepwise selection. How does your answer compare to the results in (a)?
+  - For adjusted R^2 value, both forward and backward selected 11 predictors while best subset selection
+    opted for 9. Forward and backward selection may be over fitting the data compared to best subset
+    selection which chose a simpler model which is able to explain the data similarly to the stepwise
+    methods.
+  - For Cp value, both forward and backward selected 10 while best subset selection chose 7. In this case,
+    the stepwise methods decided to go for more complex models as opposed to best subset selection, 
+    since they may not consider all combination like best subset selection.
+  - For BIC value, both forward and best subset selection chose 2, while backward chose 8. lastly, 
+    Backwards may not be reducing the size of the model as aggressively considering it starts with all
+    predictors available and reduces them one at a time.
+```{r}
+# Forward
+regfit_fwd=regsubsets(Salary~.,data=Hitters,nvmax=12,method="forward")
+fwd_summary <- summary(regfit_fwd)
+fwd_summary
+
+par(mfrow=c(2,2))
+
+plot(fwd_summary$rss,xlab="Number of Variables",ylab="RSS")
+
+which.max(fwd_summary$adjr2)
+plot(fwd_summary$adjr2,xlab="Number of Variables",ylab="Adjusted RSq")
+points(11,fwd_summary$adjr2[11], col="red",cex=2,pch=20)
+coef(regfit_fwd, 11)
+
+which.min(fwd_summary$cp)
+plot(fwd_summary$cp,xlab="Number of Variables",ylab="Cp")
+points(10,fwd_summary$cp[10],col="red",cex=2,pch=20)
+coef(regfit_fwd, 10)
+
+which.min(reg_summary$bic)
+plot(fwd_summary$bic,xlab="Number of Variables",ylab="BIC")
+points(2,fwd_summary$bic[2],col="red",cex=2,pch=20)
+coef(regfit_fwd, 2)
+```
+
+```{r}
+# Backwards
+regfit_bwd=regsubsets(Salary~.,data=Hitters,nvmax=12,method="backward")
+bwd_summary <- summary(regfit_bwd)
+fwd_summary
+
+par(mfrow=c(2,2))
+
+plot(bwd_summary$rss,xlab="Number of Variables",ylab="RSS")
+
+which.max(bwd_summary$adjr2)
+plot(bwd_summary$adjr2,xlab="Number of Variables",ylab="Adjusted RSq")
+points(11,bwd_summary$adjr2[11], col="red",cex=2,pch=20)
+coef(regfit_bwd, 11)
+
+which.min(bwd_summary$cp)
+plot(bwd_summary$cp,xlab="Number of Variables",ylab="Cp")
+points(10,bwd_summary$cp[10],col="red",cex=2,pch=20)
+coef(regfit_bwd, 10)
+
+which.min(bwd_summary$bic)
+plot(bwd_summary$bic,xlab="Number of Variables",ylab="BIC")
+points(8,bwd_summary$bic[8],col="red",cex=2,pch=20)
+coef(regfit_bwd, 8)
+```
+

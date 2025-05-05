@@ -1,0 +1,154 @@
+---
+title: "Class activity 6"
+output: html_document
+date: "2025-04-08"
+---
+
+(4) We want to predict whether a Pima Indian woman has diabetes (pos or neg) based on predictors like glucose
+level, BMI, age, and blood pressure using the “PimaIndiansDiabetes2” dataset (after removing NAs). Start your
+work with the following code and then answer parts (a)-(i). Note that parts (a), (c), and (d) are done for you.
+```{r}
+# Install packages (if needed) (needed to edit, it was causing issues when knitting)
+packages <- c("mlbench", "MASS", "class", "e1071")
+installed <- packages %in% rownames(installed.packages())
+if (any(!installed)) {
+  install.packages(packages[!installed])
+}
+
+library(mlbench) # For dataset
+library(MASS) # For LDA & QDA
+library(class) # For KNN
+library(e1071) # For Naive Bayes
+
+# Load and clean data (remove NAs)
+data(PimaIndiansDiabetes2)
+pima_clean = na.omit(PimaIndiansDiabetes2)
+attach(pima_clean)
+```
+
+(a) Numerical and graphical summaries
+Produce some numerical (e.g., summary(), table()) and graphical summaries (e.g., boxplots, histograms). Are
+there any noticeable patterns?
+```{r}
+# Numerical summaries
+summary(pima_clean)
+table(diabetes)
+# Graphical summaries
+boxplot(glucose ~ diabetes, data = pima_clean, main = "Glucose by Diabetes")
+boxplot(mass ~ diabetes, data = pima_clean, main = "BMI by Diabetes") # Note: mass = BMI
+hist(glucose, main = "Glucose Distribution")
+hist(age, main = "Age Distribution")
+```
+
+b) Full Logistic Regression
+Fit a logistic regression model using diabetes as the response and all other variables as predictors.
+Use summary() to check for statistically significant predictors. Which predictors are significant?
+```{r}
+diabetesLogReg_model <- glm(diabetes ~ ., data = pima_clean, family = "binomial")
+
+summary(diabetesLogReg_model)
+```
+
+(c) Train-Test Split (70%-30%)
+Split the data into: Training set (70%) and Test set (30%)
+```{r}
+set.seed(1)
+train = sample(1:nrow(pima_clean), 0.7 * nrow(pima_clean))
+test = pima_clean[-train,]
+diabetes.test=diabetes[-train]
+```
+
+(d) Logistic Regression (Training & Testing)
+Using only the significant predictors from (b), fit a logistic regression model on the training data.
+Report the confusion matrix on the test set.
+Compute accuracy and test error rate.
+```{r}
+logit_model = glm(diabetes ~ glucose + mass + pedigree, data = pima_clean, family =
+binomial, subset=train)
+pred_prob = predict(logit_model, test, type = "response")
+pred_class = ifelse(pred_prob > 0.5, "pos", "neg")
+# Confusion matrix and accuracy
+table(pred_class, diabetes.test)
+mean(pred_class == diabetes.test) # Accuracy
+mean(pred_class != diabetes.test) # Test-error
+```
+
+(e) Repeat (d) using LDA
+```{r}
+lda_diabetes <- lda(diabetes ~ glucose + mass + pedigree, data = pima_clean, subset = train)
+lda_pred_prob <- predict(lda_diabetes, test)$class
+
+lda_conf_matrix <- table(lda_pred_prob, diabetes.test)
+lda_conf_matrix
+
+diabetes_lda_acc <- mean(lda_pred_prob == diabetes.test)
+diabetes_lda_err <- mean(lda_pred_prob != diabetes.test)
+cat("accuracy for lda is: ", diabetes_lda_acc, "\n")
+cat("error for lda is: ", diabetes_lda_err, "\n\n")
+```
+
+(f) Repeat (d) using QDA
+```{r}
+qda_diabetes <- qda(diabetes ~ glucose + mass + pedigree, data = pima_clean, subset = train)
+qda_pred_prob <- predict(qda_diabetes, test)$class
+
+qda_conf_matrix <- table(qda_pred_prob, diabetes.test)
+qda_conf_matrix
+
+diabetes_qda_acc <- mean(qda_pred_prob == diabetes.test)
+diabetes_qda_err <- mean(qda_pred_prob != diabetes.test)
+cat("accuracy for qda is: ", diabetes_qda_acc, "\n")
+cat("error for qda is: ", diabetes_qda_err, "\n\n")
+```
+
+(g) Repeat (d) using KNN (K=3 & K=5)
+```{r}
+print("For K = 3")
+
+knn_pred_diabetes <- knn(train = pima_clean[train, c("glucose", "mass", "pedigree")],
+                         test = pima_clean[-train, c("glucose", "mass", "pedigree")],
+                         cl = diabetes[train], 
+                         k = 3)
+
+k3_table = table(knn_pred_diabetes, diabetes.test)
+k3_table
+
+knn_acc_dia <- mean(knn_pred_diabetes == diabetes.test)
+knn_err_dia <- mean(knn_pred_diabetes != diabetes.test)
+cat("accuracy for K = 3 is: ", knn_acc_dia, "\n")
+cat("error for K = 3 is: ", knn_err_dia, "\n\n")
+
+
+print("For K = 5")
+
+knn_pred_diabetes <- knn(train = pima_clean[train, c("glucose", "mass", "pedigree")],
+                         test = pima_clean[-train, c("glucose", "mass", "pedigree")],
+                         cl = diabetes[train], 
+                         k = 5)
+
+k3_table = table(knn_pred_diabetes, diabetes.test)
+k3_table
+
+knn_acc_dia <- mean(knn_pred_diabetes == diabetes.test)
+knn_err_dia <- mean(knn_pred_diabetes != diabetes.test)
+cat("accuracy for K = 5 is: ", knn_acc_dia, "\n")
+cat("error for K = 5 is: ", knn_err_dia, "\n\n")
+```
+
+(h) Repeat (d) using Naive Bayes
+```{r}
+nb_diabetes <- naiveBayes(diabetes ~ glucose + mass + pedigree, data = pima_clean, subset = train)
+
+nb_pred_prob <- predict(nb_diabetes, test, type = "class")
+
+nb_conf_matrix <- table(nb_pred_prob, diabetes.test)
+nb_conf_matrix
+
+diabetes_nb_acc <- mean(nb_pred_prob == diabetes.test)
+diabetes_nb_err <- mean(nb_pred_prob != diabetes.test)
+cat("accuracy for nb is: ", diabetes_nb_acc, "\n")
+cat("error for nb is: ", diabetes_nb_err, "\n\n")
+```
+
+(i) Compare Models: Which classification method performed best on this dataset?
+    - Logistic Regression performed best on the dataset.
