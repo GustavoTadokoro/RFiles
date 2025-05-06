@@ -1,0 +1,134 @@
+---
+title: "Activity1"
+author: "Gustavo T"
+date: "2025-01-28"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Loading the Data
+```{r}
+ad_data = read.csv("advertising.csv")
+
+names(ad_data)
+attach(ad_data)
+```
+
+Task 1: Scatter Plot
+
+1. Upon looking at the plot generated for radio and sales, we notice there is relatively positive relationship among features. Meaning investing more money in radio advertisement would generally increase sales.
+
+2. While looking at the newspaper and sales plot, not much relationship can be seen as the points are generally randomly scattered, meaning a weak or no relationship at all between the selected features. Further investment in newspaper advertisement would most likely not turn into profit.
+```{r}
+plot(sales, radio)
+
+plot(sales, newspaper)
+```
+
+Task 2: Correlation
+
+1.	Radio correlation: 0.5762226; The correlation value for sales and radio show that there is a weak linear relation between the two. The trend follows an upward curvature with points more closely together indicating there is a positive relationship between sales and radio.
+
+2.	Newspaper correlation: 0.228299; The correlation score for sales and newspaper is pretty weak and shows a minimal upward trend meaning that although spending more in newspaper advertising can lead you to a few extra dollars, the overall return would not justify  increasing the budget.
+```{r}
+cor_s_r = cor(sales, radio)
+cor_s_n = cor(sales, newspaper)
+
+cat("Correlation between sales and radio:", cor_s_r, "\n")
+cat("Correlation between sales and radio:", cor_s_n)
+```
+
+Task 3: Linear Regression models
+
+1.	Radio: Sales = 9.311638 + 0.2024958 * Radio
+
+2.	Newspaper: Sales = 12.35141 + 0.0546931 * Newspaper
+```{r}
+radio_model = lm(sales~radio, data = ad_data)
+news_model = lm(sales~newspaper, data = ad_data)
+
+summary(radio_model)
+summary(news_model)
+
+radio_coef = coef(radio_model)
+news_coef = coef(news_model)
+
+cat("Sales =", radio_coef[1], "+", radio_coef[2], "* Radio", "\n")
+cat("Sales =", news_coef[1], "+", news_coef[2], "* Newspaper")
+```
+
+Task 4: slope interpretation
+
+1.	Radio slope: 0.2024958; A slope of approximately 0.2025 for radio indicates that for every $1000 increase in the advertising budget for radio, the company expects to sell an extra 202.5 units.
+
+2.	Newspaper slope: 0.0546931; A slope of approximately 0.0547 for newspaper indicates that for each additional $1000 spent in advertising budget for newspapers, they expect to sell around 54-55 extra units.
+
+
+Task 5: Residual Standard Error.
+
+1.	Radio RSE: 4.274944; Radio with an RSE of approx. 4.2749 indicates that the deviation in actual sales vs predicted sales is around 4.2749 units.
+
+2.	Newspaper RSE: 5.09248; A RSE of around 5.09 for newspaper shows that the deviation in actual sales vs predicted sales is around 5.09 units.
+
+Radio having a lower RSE means the predicted values are closer to actual values thus generates more accurate predictions.
+```{r}
+rse_radio <- summary(radio_model)$sigma
+rse_news <- summary(news_model)$sigma
+
+cat("RSE for radio:", rse_radio, "\n")
+cat("RSE for newspaper:", rse_news)
+```
+
+Task 6: Confidence Interval
+
+Radio Interval: the interval shows that we are 95% confident that the true intercept (sales with $0 spending in advertising) lies between 8.2 and 10.42 thousands units; We are 95% confident that the true slope (effect of radio on sales) lies between 0.1622 and 0.2427. Since the interval is entirely positive we can see that radio spending has a significant positive effect on sales with an estimated increase of 162-242 units per 1000 dollars increase in the radio advertising budget.
+
+Newspaper Interval: the interval shows that we are 95% confident that the true intercept (sales with $0 spending in advertising) lies between 11.13 and 13.58 thousands units; We are 95% confident that the true slope (effect of radio on sales) lies between 0.0220 and 0.0874. Since the range is vey close to 0, this suggests that the effect of newspaper advertising on sales is weak. 
+```{r}
+confint(radio_model, level = 0.95)
+confint(news_model, level = 0.95)
+```
+
+Task 7: hypothesis testing
+
+Null Hypothesis: The predictors (radio/newspaper) have no effect on sales, thus the slope coefficient is 0.
+Alt. Hypothesis: The predictors (radio/newspaper) have significant effect on sales, thus the slope coefficient is non-zero.
+
+Radio p-value: < 2.2e-16; Given the CI for radio in the question above, we notice that the p-value for radio does not fall withing the boundaries. and is smaller than 0.05. Thus we reject the null hypothesis and radio has significant effect on sales.
+
+Newspaper p-value: 0.00114; Given the CI for newspaper, we also notice that the p-value is smaller than 0.05, thus giving newspaper statistical significance. However, even though the result is statistically significant, we know from the low slope coefficient and confidence interval that the actual impact of newspaper advertising on sales is small. So, while we reject the null hypothesis, we should still question the importance of this predictor.
+
+
+Task 8: R-Squared Stats
+
+1.	Radio R-squared: 0.3320325; Meaning 33.2% of the variance in sales can be explained by radio advertising alone.
+
+2.	Newspaper R-squared: 0.05212045; Meaning only about 5% of the variance in sales an be explained by newspaper advertising. 
+```{r}
+summary(radio_model)$r.squared
+summary(news_model)$r.squared
+```
+
+Task 9: Predictions and Intervals
+
+1. Predicted sales for radio at 100k, 150k, 200k
+  - Based on the predicted confidence interval we can expect the true mean sale value to be between [26.41548, 32.70695] for 100k, [34.54999, 44.82202] for 150k, and [42.67198, 56.94961] for 200k.
+  - While the prediction interval tells us the range within which we can expect a future sale to fall. [20.56316, 38.55927] for 100k, [29.81443, 49.55758] for 150k, and [38.76398, 60.85760] for 200k
+
+2. Predicted sales for newspaper at 100k, 150k, 200,
+  - Based on the predicted confidence interval we can expect the true mean sale value to be between [15.44222, 20.19922] for 100k, [16.58692, 24.52383] for 150k, and [ 17.70591, 28.87415] for 200k.
+  - While the prediction interval tells us the range within which we can expect a future sale to fall. [7.500432, 28.14100] for 100k, [9.757241, 31.35350] for 150k, and [11.799448, 34.78061] for 200k
+
+**Values within [...] are in thousands of units.**
+```{r}
+print("Radio Conf")
+predict(radio_model, data.frame(radio = c(100, 150, 200)), interval = "confidence") #measures uncertainty for all locations
+print("Radio Pred")
+predict(radio_model, data.frame(radio = c(100, 150, 200)), interval = "prediction") #measures uncertainty at one specific location
+
+print("Newspaper Conf")
+predict(news_model, data.frame(newspaper = c(100, 150, 200)), interval = "confidence")
+print("Newspaper Pred")
+predict(news_model, data.frame(newspaper = c(100, 150, 200)), interval = "prediction")
+```

@@ -1,0 +1,165 @@
+---
+title: "Activity2"
+author: "Gustavo T"
+date: "2025-02-18"
+output: html_document
+---
+This question involves the use of multiple linear regression on the Auto data set. The Auto data set are
+available in the ISLR2 library.
+
+Use the lm() function to perform a multiple linear regression with mpg as the response and all other
+variables except name as the predictors. Use the summary() function to print the results
+```{r}
+library(ISLR2)
+library(car)
+attach(Auto)
+
+summary(Auto)
+
+autoModel1 <- lm(mpg~.-name, Auto)
+autoModel1
+
+summary(autoModel1)
+```
+
+Use the plot() function to produce diagnostic plots of the linear regression fit. Conduct appropriate tests.
+Comment on any problems you see with the fit.
+For example, comments on the following:
+Linearity of the data.
+- The data fairly supports a nonlinear model as we can see a parabola (quadratic) shape with a 
+  wider funnel as we progress the x line.
+Normality of residuals.
+- As far as normality goes, the Q-Q plot seems to fit the line y = x but we start to notice more 
+  outliers/high leverage points the higher you move up on the x-axis.
+- Upon looking at the shapiro test, the p-value indicates that residual data is not normally
+  distributed.
+Homogeneity of residuals variance.
+- From the ncvTest we see a small p-value at almost 0 meaning we lack the presence of a
+  constant variance. The plot also does not indicate a horizontally flat red line, indicating
+  there may not be constant variance.
+Independence of residuals error terms.
+- From the Durbin-Watson test we get a p-value of 0 indicating we have violated
+  the independence assumption, therefore, residuals are not independent.
+Do the residual plots suggest any unusually large outliers?
+- 321, 323
+Does the leverage plot identify any observations with unusually high leverage?
+- 14
+```{r}
+plot(autoModel1, which = 1)
+plot(autoModel1, which = 2)
+plot(autoModel1, which = 3)
+plot(autoModel1, which = 5)
+
+shapiro.test(autoModel1$residuals)
+
+ncvTest(autoModel1)
+
+durbinWatsonTest(autoModel1)
+
+rstudent(autoModel1) #studentized residuals
+hatvalues(autoModel1) #leverage points
+plot(predict(autoModel1), rstudent(autoModel1)) #plot the studentized residuals vs. the fitted values to detect outliers
+plot(hatvalues(autoModel1), rstudent(autoModel1))#plot the studentized residuals vs. leverage to detect high leverage points
+which.max(abs(rstudent(autoModel1))) #Gives the one that might be an outlier
+which.max(hatvalues(autoModel1)) #Gives what might be a high-leverage point
+hatvalues(autoModel1)>0.02
+rstudent(autoModel1)>abs(3)
+```
+
+This question should be answered using the Carseats data set. The Carseats data set are available in the
+ISLR2 library.
+(a) Fit a multiple regression model to predict Sales using Price, Income, Advertising, and Population.
+```{r}
+attach(Carseats)
+head(Carseats)
+
+carseatModel <- lm(Sales~Price+Income+Advertising+Population, Carseats) # model with pop
+carseatModel
+
+summary(carseatModel)
+```
+
+(b) Provide an interpretation of each coefficient in the model.
+  - Based on the coefficients obtained we can tell that with all features at 0
+    we can expect 12.32599 units in sales and a decrease in sale number if there
+    is an increase in price by 0.0539 units.;
+  - an increase in income is associated with an increase in sales by 0.01098 units;
+  - an increase in advertising will result in increased sales by 0.1238 units;
+  - an increase in population indicates a lower number/value of sales by 0.0006 units.
+```{r}
+summary(carseatModel) # with population
+```
+
+(c) Write out the model in equation form.
+  - Sales = -0.0538(Price) + 0.0110(Income) + 0.1202(Advertising) - 0.0006(Population)
+  - Sales = -0.0538(Price) + 0.0110(Income) + 0.1202(Advertising)
+  
+(d) For which of the predictors can you reject the null hypothesis H0 : βj = 0?
+  - We can reject the null hypothesis with Price, Income, and Advertising since they are 
+    all significant predictors for Sales.
+
+(e) On the basis of your response to the previous question, fit a smaller model that only uses the predictors
+for which there is evidence of association with the outcome.
+```{r}
+carseatModel2 <- lm(Sales~Price+Income+Advertising, Carseats)
+carseatModel2
+
+summary(carseatModel2) # without population (better fit since pop. is not significant)
+```
+
+(f) How well do the models in (a) and (e) fit the data?
+  - Considering both models have a p-value of basically 0, they both fit the data relatively well
+    but after considering selected features and their level of significance, we can say
+    that model 2 is the better one since it does not take non-significant features into account.
+    It is also important to say that since both have a low R_squared they would not be considered
+    to fit the data well.
+```{r}
+anova(carseatModel2, carseatModel)
+```
+
+(g) Using the model from (e), obtain 95 % confidence intervals for the coefficient(s).
+```{r}
+confint(carseatModel2, level = 0.95)
+```
+
+(h) Using the model from (e), produce diagnostic plots of the linear regression fit. Conduct appropriate tests.
+Comment on any problems you see with the fit.
+For example, comments on the following:
+Linearity of the data.
+- The second model has a much flatter horizontal line for residuals vs fitted
+  giving it a much higher linearity coefficient. The points are also scattered
+  randomly not forming any type of pattern.
+Normality of residuals.
+- While looking at the Q-Q plot we can see the vast majority of points
+  lie on the line y = x, indicating normality, with outliers/high leverage
+  points only being located at both tail ends. In addition, the shapiro test
+  outputs a p-value of 0.4779 which indicates normality since > 0.05.
+Homogeneity of residuals variance.
+- The red line for the plot is mostly flat indicating the possibility of
+  constant variance. Through the ncvTest we get a p-value of 0.3519, which
+  is higher than 0.05 showing homogeneity, or evidence of constant variance.
+Independence of residuals error terms.
+- Looking at the residual vs leverage point plot we can see that the majority
+  of points are located around 0 with no clear pattern which can indicate independence.
+  Furthermore, the Durbin-Watson test shows a p-value of 0.474 which is higher than 0.05
+  and means there is no significant autocorrelation (independence acquired). 
+Do the residual plots suggest any unusually large outliers?
+- 51
+Does the leverage plot identify any observations with unusually high leverage?
+- 43
+```{r}
+plot(carseatModel2, which = 1)
+plot(carseatModel2, which = 2)
+plot(carseatModel2, which = 3)
+plot(carseatModel2, which = 5)
+
+shapiro.test(carseatModel2$residuals)
+
+ncvTest(carseatModel2)
+
+durbinWatsonTest(carseatModel2)
+
+which.max(abs(rstudent(carseatModel2))) #Gives the one that might be an outlier
+which.max(hatvalues(carseatModel2)) #Gives what might be a high-leverage point
+```
+
