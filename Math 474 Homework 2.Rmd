@@ -1,0 +1,166 @@
+---
+title: "Homework 2"
+output: html_document
+date: "2025-03-25"
+---
+
+1)
+This question should be answered using the Weekly data set, which is part of the ISLR2 package. This data is
+similar in nature to the Smarket data, except that it contains 1089 weekly returns for 21 years, from the
+beginning of 1990 to the end of 2010.
+(a) Produce some numerical and graphical summaries of the Weekly data. Do there appear to be any patterns?
+  - Year and Volume do seem to have an exponential pattern, while the others seems more like a cluster
+  
+(b) Use the full data set to perform a logistic regression with Direction as the response and the five lag variables plus Volume as predictors. Use the summary function to print the results. Do any of the predictors appear to be statistically significant? If so, which ones?
+  - From the summary of the model, all features look rather insignificant with Lag1 being the lowest value.
+  
+(c) Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.
+  - the confusion matrix is telling us that the log regression is labeling 130 down that were supposed to be
+    down, 171 that are supposed to be down that are marked as up, 354 that are supposed to be marked up are
+    marked down, and 434 marked up were supposed to be up. The regression is marking about half of each
+    right while the other it is labeling incorrectly.
+
+(d) Now fit the logistic regression model using a training data period from 1990 to 2008, with Lag2 as the only predictor. Compute the confusion matrix and the overall fraction of correct predictions for the held out data (that is, the data from 2009 and 2010).
+```{r}
+library(ISLR2)
+attach(Weekly)
+head(Weekly)
+
+names(Weekly)
+dim(Weekly)
+
+summary(Weekly)
+pairs(Weekly)
+pairs(Weekly, col = Direction)
+
+cor(Weekly[,-9])
+
+model1 <- glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Weekly,family=binomial)
+summary(model1)
+
+model1_prob <- predict(model1,type="response")
+model1_prob[1:10]
+
+model1_pred=rep("Down", 1089)
+head(model1_pred)
+model1_pred[model1_prob>.5]="Up"
+head(model1_pred)
+
+table1 <- table(model1_pred, Direction)
+table1
+acc <- mean(model1_pred == Direction)
+acc
+err <- mean(model1_pred != Direction)
+err
+
+train1 <- (Year < 2009)
+train1_data <- Weekly[train1,] #train data
+train1_direction <- Direction[train1]
+
+test1_data <- Weekly[!train1,] #test data
+test1_direction <- Direction[!train1]
+dim(test1_data)
+
+model2 <- glm(Direction ~ Lag2, data = train1_data, family = binomial)
+summary(model2)
+
+model2_prob <- predict(model2, newdata = test1_data, type = "response")
+model2_pred <- rep("Down", 104)
+head(model2_pred)
+model2_pred[model2_prob > 0.5] = "Up"
+head(model2_pred)
+
+table2 <- table(model2_pred, test1_direction)
+table2
+acc2 <- mean(model2_pred == test1_direction)
+acc2
+err2 <- mean(model2_pred != test1_direction)
+err2
+```
+
+
+(2)
+In this problem, you will develop a model to predict whether a given suburb has a crime rate above or below the median based on the Boston data set. The Boston data is part of the ISLR2 package.
+(a) Create a binary variable, crim01, that contains a 1 if crim contains a value above its median, and a 0 if crime contains a value below its median. You can compute the median using the median() function. Note you may find it helpful to use the data.frame() function to create a single data set containing both crim01 and the other Boston variables.
+(b) Split the data into a training set (50%) and a test set (50%).
+(c) Perform logistic regression on the training data in order to predict crim01 using all other variables (except crim). Report the confusion matrix. What is the accuracy and test error of the model obtained?
+- Accuracy: ~89%
+- Error: ~11%
+```{r}
+library(ISLR2)
+attach(Boston)
+head(Boston)
+
+names(Boston)
+
+crime_median <- median(Boston$crim)
+crime_median
+crim01 <- ifelse(Boston$crim > crime_median, 1, 0)
+
+boston_updated <- data.frame(Boston, crim01)
+head(boston_updated)
+dim(boston_updated)
+
+train_index <- sample(1:506, 506/2)
+train2 <- boston_updated[train_index,]
+test2 <- boston_updated[-train_index,]
+
+model3 <- glm(crim01~.-crim, data = train2, family = binomial)
+
+model3_prob <- predict(model3, test2, type = "response")
+
+model3_pred <- ifelse(model3_prob > 0.5, 1, 0)
+
+table3 <- table(model3_pred, test2$crim01)
+table3
+
+acc3 <- mean(model3_pred == test2$crim01)
+acc3
+err3 <- mean(model3_pred != test2$crim01)
+err3
+```
+
+
+(3)
+In this problem, you will develop a model to predict whether a given university has “a number of applications received” above or below the median based on the College data set. The College data is part of the ISLR2 package.
+(a) Create a binary variable, Apps01, that contains a 1 if Apps contains a value above its median, and a 0 if Apps contains a value below its median. You can compute the median using the median() function. Note you
+may find it helpful to use the data.frame() function to create a single data set containing both Apps01 and the other College variables.
+(b) Split the data set into a training set and a test set (50% each).
+(c) Perform logistic regression on the training data in order to predict Apps01 using all other variables (except Enroll, Accept, and Apps). Report the confusion matrix. What is the accuracy and test error of the model obtained?
+- Accuracy: ~91%
+- Error: ~9%
+```{r}
+library(ISLR2)
+attach(College)
+head(College)
+
+names(College)
+dim(College)
+
+apps_median <- median(College$Apps)
+apps_median
+
+apps01 <- ifelse(College$Apps > apps_median, 1, 0)
+
+college_updated <- data.frame(College, apps01)
+head(college_updated)
+
+train_index2 <- sample(1:777, 777/2)
+train3 <- college_updated[train_index2, ]
+test3 <- college_updated[-train_index2, ]
+
+model4 <- glm(apps01~.-Enroll -Accept -Apps, data = train3, family = binomial)
+
+model4_prob <- predict(model4, test3, type = "response")
+
+model4_pred <- ifelse(model4_prob > 0.5, 1, 0)
+
+table4 <- table(model4_pred, test3$apps01)
+table4
+
+acc4 <- mean(model4_pred == test3$apps01)
+acc4
+err4 <- mean(model4_pred != test3$apps01)
+err4
+```
+

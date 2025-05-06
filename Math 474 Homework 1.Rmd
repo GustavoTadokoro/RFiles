@@ -1,0 +1,141 @@
+---
+title: "Homework1"
+author: "Gustavo T"
+date: "2025-02-04"
+output: word_document
+---
+
+(1)
+This question involves the use of simple linear regression on the Auto data set. The Auto data set are available in the ISLR2 library.
+(a)	Use the library function to load the ISLR2 package, which is a very large collection of data sets and functions. Use the attach() function in order to tell R to make the variables in this data frame available by name.
+```{r}
+library(ISLR2)
+attach(Auto)
+```
+
+(b)	Use the dim() function to see the number of observations and variables in the data set. Use the summary() function to produce a numerical summary of each variable in the data set.
+```{r}
+dim(Auto)
+summary(Auto)
+```
+
+(c)	Produce a scatterplot matrix which includes all of the variables in the data set.
+```{r}
+plot(Auto)
+```
+
+(d)	Compute the matrix of correlations between the variables using the function cor(). You will need to exclude the name variable, which is qualitative. you might use the following R-code: 
+cor(subset(Auto, select=-name))
+```{r}
+cor(subset(Auto, select = -name))
+```
+
+(e)	Use the lm() function to perform a simple linear regression with mpg as the response and horsepower as the predictor. Use the summary() function to print the results. Comment on the output.
+For example:
+i.	Is there a relationship between the predictor and the response?
+ii.	How strong is the relationship between the predictor and the response?
+iii.	Is the relationship between the predictor and the response positive or negative?
+iv.	What is the predicted mpg associated with a horsepower of 98? What are the associated 95 % confidence and prediction intervals? Interpret your intervals.
+
+- Yes there is a moderate negative relationship between the response and predictor. We can see the realtionship is moderate due to the r-squared value being around 0.60 and we know there is a relationship because the p-value is really close to 0 at <2.2e-16. We conclude the relationship to be negative since the predicted slope coefficient is negative.
+
+- When plugging in 98 for hoursepower for the predictor models, the line of best fit predicts a mpg of 24.467. with the 95% confidence interval we can be sure the true mpg of a car with 98 horsepower to be between 23.97308, and 24.96108 mpg. The prediction interval is [14.8094, 34.12476] with a fit at 24.467.
+```{r}
+lm1 <- lm(mpg~horsepower, Auto)
+lm1
+
+summary(lm1)
+
+confint(lm1, level = 0.95)
+predict (lm1 ,data.frame(horsepower = 98),interval ="confidence")
+predict (lm1 ,data.frame(horsepower = 98),interval ="prediction")
+```
+
+(f)	Plot the response and the predictor. Use the abline() function to display the least squares regression line.
+```{r}
+plot(mpg~horsepower)
+
+abline(lm1)
+```
+
+(g)	Use the lm() function to perform a multiple linear regression with mpg as the response and all other variables except name as the predictors. Use the summary() function to print the results.
+Comment on the output. For instance:
+i.	Is there a relationship between the predictors and the response?
+ii.	Which predictors appear to have a statistically significant relationship to the response?
+iii.	What does the coefficient for the year variable suggest?
+
+- Based on the p-value for all the features (outside name) there is a realtionship between mpg and all other predictors. Based on individual p-values, displacement, weight, year, origin are relatively significant features, while cylinders, horsepower, and acceleration are not significant. The coefficient for year indicates how the mpg changes as the year count increases (while other features are at a fixed value). According to our data, a car from the next year should have an increase of 0.75 for its mpg compared to last year's counterpart. 
+```{r}
+lm2 <- lm(mpg~.-name, data = Auto)
+lm2
+
+summary(lm2)
+```
+
+(h)	Compare the two models in parts (e) and (g) using anova() function. Based on the p-value of F-statistic, is there evidence that the second model in part (g) superior to the one in part (b)?
+
+- Based on the RSS and lack of p-value present, we can infer that the model using only horsepower as a predictor is a better model than the one involving all features. If we want a multi-linear model to be superior we would need to filter out the insignificant features in order to obtain a higher quality MLM
+```{r}
+anova(lm2, lm1)
+```
+
+
+
+(2) 
+In this question, you will use the Boston data set, which records medv (median house value) for 506 neighborhoods around Boston. We will seek to predict medv using 12 predictors such as rm (average number of rooms per house), age (average age of houses), and lstat (percent of households with low socioeconomic status).
+(a)	Use the library function to load the ISLR2 package, which is a very large collection of data sets and functions. Use the attach() function in order to tell R to make the variables in this data frame available by name.
+```{r}
+attach(Boston)
+names(Boston)
+```
+
+(b)	Use the lm() function to fit a simple linear regression model, with medv as the response and lstat as the predictor. Use the summary() function to print the results. Interpret the estimated value of the slope coefficient.
+
+- Based on the data and the slope coefficient, we can notice a negative relationship between lstat and medv. With 1-unit increase in lstat, we can expect a decrease of around 0.95 medv units. the relationship indicates that as the percentage of lower-status residents increase, the median value of houses in the area tend to decrese. 
+```{r}
+lmB1 <- lm(medv~lstat, data = Boston)
+lmB1
+
+summary(lmB1)
+```
+
+(c)	Based on your outputs in part d, is the estimate of the slope coefficient statistically significant? Please answer “yes” or “no” and explain how you can tell. Interpret R^2 statistic.
+
+- Yes the slope coefficient is statistically significant since the p-value is relatively close to 0. Additionally, The r-squared of 0.5441 indicates that a little over half of the variation in medv is determined by lstat while the other 45% is determined by other factors. Although it shows that the variable lstat is statistically significant the fit could be a little better.
+```{r}
+summary(lmB1)$r.squared
+```
+
+(d)	Use the confint() command to obtain a 95 % confidence interval for the coefficient estimates.
+```{r}
+confint(lmB1, level = 0.95)
+```
+
+(e)	Use the predict() function to produce confidence intervals and prediction intervals for the prediction of medv for the given values of lstat : 5, 10, and 15.
+```{r}
+predict (lmB1 ,newdata = data.frame(lstat = c(5, 10, 15)),interval ="confidence")
+predict (lmB1 ,newdata = data.frame(lstat = c(5, 10, 15)),interval ="prediction")
+```
+
+(f)	Plot the response and the predictor. Use the abline() function to display the least squares regression line.
+```{r}
+plot(medv~lstat)
+```
+
+(g)	Use the lm() function to perform a multiple linear regression with medv as the response and lstat and age as the predictors. Use the summary() function to print the results.
+```{r}
+lmB2 <- lm(medv~lstat +age, data = Boston)
+lmB2
+
+summary(lmB2)
+```
+
+(h)	Compare the two models in parts (b) and (g) using anova() function. Based on the p-value of F-statistic, is there evidence that the second model in part (g) superior to the one in part (b)?
+
+- After looking at the results from the anova, although both models have a p-value of less than 5%, I would not necessarily 
+say one model is better than the other. But I do agree with the model with "age" to have a better fit since the p-value is 
+statistically significant at the 0.05 level.
+```{r}
+anova(lmB2, lmB1)
+```
+

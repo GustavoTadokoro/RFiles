@@ -1,0 +1,337 @@
+---
+title: "Math 474 Homework 3"
+output: html_document
+date: "2025-04-07"
+---
+
+---
+title: "Math 474 Homework 3"
+output: html_document
+date: "2025-04-03"
+---
+
+Libraries
+```{r}
+library(ISLR2)
+library(MASS)
+library(class)
+library(e1071)
+```
+
+
+(1) 
+Suppose that we wish to predict whether a given stock will issue a dividend this year (“Yes”
+or “No”) based on X, last year’s percent profit. We examine a large number of companies and
+discover that the mean value of X for companies that issued a dividend was X = 10, while
+the mean for those that didn’t was X = 0. In addition, the variance of X for these two sets of
+companies was sigmaˆ2 = 36. Finally, 80 % of companies issued dividends. Assuming that X
+follows a normal distribution, predict the probability that a company will issue a dividend
+this year given that its percentage profit was X = 4 last year.
+
+pi_yes = 80% = 0.80
+pi_no = 20% = 0.20
+f_yes(x) = 
+f_no(x) = 
+```{r}
+attach(Smarket)
+head(Smarket)
+```
+
+```{r}
+f_yes <- dnorm(4, mean = 10, sd = 6)
+f_no <- dnorm(4, mean = 0, sd = 6)
+cat("f yes: ", f_yes, "\n", "f no: ", f_no, "\n")
+
+P_yes_givenX <- ((f_yes*0.80)/(f_yes*0.80 + f_no*0.20))
+cat("probability that a company will issue a dividend this year given that its percentage profit was X = 4 last year: ", P_yes_givenX)
+```
+
+(2) 
+(a) Repeat part (d) of question 1 from homework 2 using LDA.
+(b) Repeat part (d) of question 1 from homework 2 using QDA.
+(c) Repeat part (d) of question 1 from homework 2 using KNN with K = 1 and K = 3.
+(d) Repeat part (d) of question 1 from homework 2 using naive Bayes.
+(e) Which of these methods appears to provide the best results on this data?
+    - From the accuracy results obtained, the LDA statistical method is the model 
+      that provides the best results for the dataset.
+```{r}
+attach(Weekly)
+head(Weekly)
+```
+
+```{r}
+set.seed(1)
+
+# Training and Testing data
+hw3_train2 <- (Year < 2009)
+hw3_train_data2 <- Weekly[hw3_train2,] #train data
+hw3_train_direction2 <- Direction[hw3_train2]
+
+hw3_test_data2 <- Weekly[!hw3_train2,] #test data
+hw3_test_direction2 <- Direction[!hw3_train2]
+cat("Dimensions are: ", dim(hw3_test_data2), "\n")
+
+# LDA
+lda_model2 <- lda(Direction ~ Lag2, data = hw3_train_data2)
+lda_pred2 <- predict(lda_model2, newdata = hw3_test_data2)$class
+
+lda_table2 <- table(lda_pred2, hw3_test_direction2) #Confusion matrix
+lda_table2
+
+lda_acc2 <- mean(lda_pred2 == hw3_test_direction2)
+lda_err2 <- mean(lda_pred2 != hw3_test_direction2)
+cat("Accuracy for lda model: ", lda_acc2, "\n")
+cat("Error for lda model: ", lda_err2, "\n\n")
+
+# QDA
+qda_model2 <- qda(Direction ~ Lag2, data = hw3_train_data2)
+qda_pred2 <- predict(qda_model2, newdata = hw3_test_data2)$class
+
+qda_table2 <- table(qda_pred2, hw3_test_direction2) #Confusion matrix
+qda_table2
+
+qda_acc2 <- mean(qda_pred2 == hw3_test_direction2)
+qda_err2 <- mean(qda_pred2 != hw3_test_direction2)
+cat("Accuracy for qda model: ", qda_acc2, "\n")
+cat("Error for qda model: ", qda_err2, "\n\n")
+
+# KNN (K = 1, K = 3)
+knn_pred2_1 <- knn(train = hw3_train_data2[, "Lag2", drop = FALSE],
+                   test = hw3_test_data2[, "Lag2", drop = FALSE],
+                   cl = hw3_train_direction2,
+                   k = 1)
+
+table_k1_2 <- table(knn_pred2_1, hw3_test_direction2)
+table_k1_2
+
+knn_acc2_1 <- mean(knn_pred2_1 == hw3_test_direction2)
+knn_err2_1 <- mean(knn_pred2_1 != hw3_test_direction2)
+cat("Accuracy for knn_1 model: ", knn_acc2_1, "\n")
+cat("Error for knn_1 model: ", knn_err2_1, "\n\n")
+
+knn_pred2_3 <- knn(train = hw3_train_data2[, "Lag2", drop = FALSE],
+                   test = hw3_test_data2[, "Lag2", drop = FALSE],
+                   cl = hw3_train_direction2,
+                   k = 3)
+
+table_k3_2 <- table(knn_pred2_3, hw3_test_direction2)
+table_k3_2
+
+knn_acc2_3 <- mean(knn_pred2_3 == hw3_test_direction2)
+knn_err2_3 <- mean(knn_pred2_3 != hw3_test_direction2)
+cat("Accuracy for knn_3 model: ", knn_acc2_3, "\n")
+cat("Error for knn_3 model: ", knn_err2_3, "\n\n")
+
+# NB
+nb_model2 <- naiveBayes(Direction ~ Lag2, data = hw3_train_data2)
+nb_pred2 <- predict(nb_model2, newdata = hw3_test_data2)
+
+nb_table2 <- table(nb_pred2, hw3_test_direction2)
+nb_table2
+
+nb_acc2 <- mean(nb_pred2 == hw3_test_direction2)
+nb_err2 <- mean(nb_pred2 != hw3_test_direction2)
+cat("Accuracy for nb model: ", nb_acc2, "\n")
+cat("Error for nb model: ", nb_err2, "\n\n")
+```
+
+(3) 
+(a) Repeat part (c) of question 2 from homework 2 using LDA.
+(b) Repeat part (c) of question 2 from homework 2 using QDA.
+(c) Repeat part (c) of question 2 from homework 2 using KNN with K = 1 and K = 3.
+(d) Repeat part (c) of question 2 from homework 2 using naive Bayes.
+(e) Which of these methods appears to provide the best results on this data?
+    - From the accuracy results obtained, both the QDA and KNN at K = 3 statistical methods
+      are the models that provides the best results for the dataset
+```{r}
+attach(Boston)
+head(Boston)
+```
+
+```{r}
+set.seed(1)
+
+# Training and Testing data
+crime_median_3 <- median(Boston$crim)
+cat("crime median is: ", crime_median_3, "\n")
+crim01_3 <- ifelse(Boston$crim > crime_median_3, 1, 0)
+
+boston_updated3 <- data.frame(Boston, crim01_3)
+head(boston_updated3)
+cat("dimension of the data: ", dim(boston_updated3), "\n\n")
+
+train_index_3 <- sample(1:506, 506/2)
+hw3_train_data3 <- boston_updated3[train_index_3,]
+hw3_test_data3 <- boston_updated3[-train_index_3,]
+
+# LDA
+lda_model3 <- lda(crim01_3 ~ .-crim, data = hw3_train_data3)
+lda_pred3 <- predict(lda_model3, newdata = hw3_test_data3)$class
+
+lda_table3 <- table(lda_pred3, hw3_test_data3$crim01_3) #Confusion matrix
+lda_table3
+
+lda_acc3 <- mean(lda_pred3 == hw3_test_data3$crim01_3)
+lda_err3 <- mean(lda_pred3 != hw3_test_data3$crim01_3)
+cat("Accuracy for lda model: ", lda_acc3, "\n")
+cat("Error for lda model: ", lda_err3, "\n\n")
+
+# QDA
+qda_model3 <- qda(crim01_3 ~ .-crim, data = hw3_train_data3)
+qda_pred3 <- predict(qda_model3, newdata = hw3_test_data3)$class
+
+qda_table3 <- table(qda_pred3, hw3_test_data3$crim01_3) #Confusion matrix
+qda_table3
+
+qda_acc3 <- mean(qda_pred3 == hw3_test_data3$crim01_3)
+qda_err3 <- mean(qda_pred3 != hw3_test_data3$crim01_3)
+cat("Accuracy for qda model: ", qda_acc3, "\n")
+cat("Error for qda model: ", qda_err3, "\n\n")
+
+# KNN (K = 1, K = 3)
+
+train_X3 <- subset(hw3_train_data3, select = -c(crim, crim01_3)) #all but crim/crim01_3
+test_X3 <- subset(hw3_test_data3, select = -c(crim, crim01_3)) #all but crim/crim01_3
+train_y3 <- hw3_train_data3$crim01_3 #only crim01_3
+test_y3 <- hw3_test_data3$crim01_3 #only crim01_3
+
+knn_pred3_1 <- knn(train = train_X3,
+                   test = test_X3,
+                   cl = train_y3,
+                   k = 1)
+
+table_k1_3 <- table(knn_pred3_1, hw3_test_data3$crim01_3)
+table_k1_3
+
+knn_acc3_1 <- mean(knn_pred3_1 == hw3_test_data3$crim01_3)
+knn_err3_1 <- mean(knn_pred3_1 != hw3_test_data3$crim01_3)
+cat("Accuracy for knn_1 model: ", knn_acc3_1, "\n")
+cat("Error for knn_1 model: ", knn_err3_1, "\n\n")
+
+knn_pred3_3 <- knn(train = train_X3,
+                   test = test_X3,
+                   cl = train_y3,
+                   k = 3)
+
+table_k3_3 <- table(knn_pred3_3, hw3_test_data3$crim01_3)
+table_k3_3
+
+knn_acc3_3 <- mean(knn_pred3_3 == hw3_test_data3$crim01_3)
+knn_err3_3 <- mean(knn_pred3_3 != hw3_test_data3$crim01_3)
+cat("Accuracy for knn_3 model: ", knn_acc3_3, "\n")
+cat("Error for knn_3 model: ", knn_err3_3, "\n\n")
+
+# NB
+nb_model3 <- naiveBayes(crim01_3 ~ .-crim, data = hw3_train_data3)
+nb_pred3 <- predict(nb_model3, newdata = hw3_test_data3)
+
+nb_table3 <- table(nb_pred3, hw3_test_data3$crim01_3)
+nb_table3
+
+nb_acc3 <- mean(nb_pred3 == hw3_test_data3$crim01_3)
+nb_err3 <- mean(nb_pred3 != hw3_test_data3$crim01_3)
+cat("Accuracy for nb model: ", nb_acc3, "\n")
+cat("Error for nb model: ", nb_err3, "\n\n")
+```
+
+(4) 
+(a) Repeat part (c) of question 3 from homework 2 using LDA.
+(b) Repeat part (c) of question 3 from homework 2 using QDA.
+(c) Repeat part (c) of question 3 from homework 2 using KNN with K = 1 and K = 3.
+(d) Repeat part (c) of question 3 from homework 2 using naive Bayes.
+(e) Which of these methods appears to provide the best results on this data?
+    - From the accuracy results obtained, the KNN at K = 3 statistical method is the model 
+      that provides the best results for the dataset
+```{r}
+attach(College)
+head(College)
+```
+
+```{r}
+set.seed(1)
+
+# Training and Testing data
+hw3_apps_median <- median(College$Apps)
+cat("Median of apps is: ", hw3_apps_median, "\n")
+
+apps01_4 <- ifelse(College$Apps > hw3_apps_median, 1, 0)
+
+college_updated4 <- data.frame(College, apps01_4)
+head(college_updated4)
+
+train_index_4 <- sample(1:777, 777/2)
+hw3_train_data4 <- college_updated4[train_index_4, ]
+hw3_test_data4 <- college_updated4[-train_index_4, ]
+
+# LDA
+lda_model4 <- lda(apps01_4 ~ .-Enroll -Accept -Apps, data = hw3_train_data4)
+lda_pred4 <- predict(lda_model4, newdata = hw3_test_data4)$class
+
+lda_table4 <- table(lda_pred4, hw3_test_data4$apps01_4)
+lda_table4
+
+lda_acc4 <- mean(lda_pred4 == hw3_test_data4$apps01_4)
+lda_err4 <- mean(lda_pred4 != hw3_test_data4$apps01_4)
+cat("Accuracy for lda model: ", lda_acc4, "\n")
+cat("Error for lda model: ", lda_err4, "\n\n")
+
+# QDA
+qda_model4 <- qda(apps01_4 ~ .-Enroll -Accept -Apps, data = hw3_train_data4)
+qda_pred4 <- predict(qda_model4, newdata = hw3_test_data4)$class
+
+qda_table4 <- table(qda_pred4, hw3_test_data4$apps01_4)
+qda_table4
+
+qda_acc4 <- mean(qda_pred4 == hw3_test_data4$apps01_4)
+qda_err4 <- mean(qda_pred4 != hw3_test_data4$apps01_4)
+cat("Accuracy for lda model: ", qda_acc4, "\n")
+cat("Error for lda model: ", qda_err4, "\n\n")
+
+# KNN (K = 1, K = 3)
+
+train_X4 <- subset(hw3_train_data4, select = -c(Private, Enroll, Accept, Apps, apps01_4)) #all but specified ones
+test_X4 <- subset(hw3_test_data4, select = -c(Private, Enroll, Accept, Apps, apps01_4)) #all but specified ones
+train_y4 <- hw3_train_data4$apps01_4 #Only the response
+test_y4 <- hw3_test_data4$apps01_4  #Only the response
+
+
+knn_pred4_1 <- knn(train = train_X4,
+                   test = test_X4,
+                   cl = train_y4,
+                   k = 1)
+
+table_k1_4 <- table(knn_pred4_1, hw3_test_data4$apps01_4)
+table_k1_4
+
+knn_acc4_1 <- mean(knn_pred4_1 == hw3_test_data4$apps01_4)
+knn_err4_1 <- mean(knn_pred4_1 != hw3_test_data4$apps01_4)
+cat("Accuracy for knn_1 model: ", knn_acc4_1, "\n")
+cat("Error for knn_1 model: ", knn_err4_1, "\n\n")
+
+knn_pred4_3 <- knn(train = train_X4,
+                   test = test_X4,
+                   cl = train_y4,
+                   k = 3)
+
+table_k3_4 <- table(knn_pred4_3, hw3_test_data4$apps01_4)
+table_k3_4
+
+knn_acc4_3 <- mean(knn_pred4_3 == hw3_test_data4$apps01_4)
+knn_err4_3 <- mean(knn_pred4_3 != hw3_test_data4$apps01_4)
+cat("Accuracy for knn_3 model: ", knn_acc4_3, "\n")
+cat("Error for knn_3 model: ", knn_err4_3, "\n\n")
+
+# NB
+nb_model4 <- naiveBayes(apps01_4 ~ . -Enroll -Accept -Apps, data = hw3_train_data4)
+nb_pred4 <- predict(nb_model4, newdata = hw3_test_data4)
+
+nb_table4 <- table(nb_pred4, hw3_test_data4$apps01_4)
+nb_table4
+
+nb_acc4 <- mean(nb_pred4 == hw3_test_data4$apps01_4)
+nb_err4 <- mean(nb_pred4 != hw3_test_data4$apps01_4)
+cat("Accuracy for nb model: ", nb_acc3, "\n")
+cat("Error for nb model: ", nb_err3, "\n\n")
+```
+
+
